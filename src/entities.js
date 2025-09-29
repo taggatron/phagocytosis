@@ -1,4 +1,4 @@
-import { TILE_SIZE, DIRECTIONS, PLAYER_SPEED, ENEMY_SPEED, FRIGHTENED_SPEED, COLORS, SCORE_VALUES, FRIGHTENED_DURATION, FRIGHTENED_WARNING } from './constants.js';
+import { TILE_SIZE, DIRECTIONS, PLAYER_SPEED, ENEMY_SPEED, FRIGHTENED_SPEED, COLORS, SCORE_VALUES, FRIGHTENED_DURATION, FRIGHTENED_WARNING, ACTIVATED_SPEED_MULTIPLIER } from './constants.js';
 import { chooseNextDirection } from './pathfinding.js';
 import { isWallAt } from './level.js';
 
@@ -215,17 +215,17 @@ export class Enemy extends Entity {
     this.chooseDir(context);
     this.move();
   }
-  chooseDir({ player }) {
+  chooseDir(game) {
     const { col, row } = this.gridPos();
     let target;
     if (this.state === EnemyState.FRIGHTENED) {
       // run from player: target is mirrored tile
-      const p = player.gridPos();
+      const p = game.player.gridPos();
       target = { col: col + (col - p.col), row: row + (row - p.row) };
     } else if (this.state === EnemyState.SCATTER) {
       target = this.scatterTarget;
     } else if (this.state === EnemyState.CHASE) {
-      target = player.gridPos();
+      target = game.player.gridPos();
     } else if (this.state === EnemyState.EATEN) {
       target = { col: this.homeCol, row: this.homeRow };
     }
@@ -233,6 +233,7 @@ export class Enemy extends Entity {
     if (dir) this.dir = dir;
     // speed adjustments
     if (this.state === EnemyState.FRIGHTENED) this.speed = FRIGHTENED_SPEED * (TILE_SIZE / 60);
+    else if (game.isActivatedMode()) this.speed = this.baseSpeed * ACTIVATED_SPEED_MULTIPLIER * (TILE_SIZE / 60);
     else this.speed = this.baseSpeed * (TILE_SIZE / 60);
   }
   move() {
@@ -261,16 +262,11 @@ export class Enemy extends Entity {
       }
     } else if (this.state === EnemyState.EATEN) baseColor = COLORS.eaten;
     else {
-      // Determine harm window active from game context
-      const harmActive = gameContext && gameContext.isHarmWindowActive && gameContext.isHarmWindowActive();
-      if (harmActive) {
-        // harmful state flashing subtle to indicate danger
-        const phase = Math.floor(performance.now()/260)%2;
-        if (phase===0) baseColor = baseColor; else baseColor = baseColor + 'cc';
-      } else {
-        // harmless appearance slightly desaturated / dim
-        baseColor += '55';
-      }
+      // Pulse stronger during activated mode, subtle otherwise
+      const activated = gameContext && gameContext.isActivatedMode && gameContext.isActivatedMode();
+      const phase = Math.sin(performance.now() / (activated ? 140 : 260));
+      const alphaSuffix = activated ? (phase > 0 ? '' : 'cc') : (phase > 0.3 ? '' : 'bb');
+      baseColor = baseColor + alphaSuffix;
     }
     const { x, y } = this; const r = this.radius;
     if (this.kind === 'virus') {

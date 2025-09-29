@@ -24,7 +24,7 @@ export const DIRECTIONS = {
 export const DIR_LIST = [DIRECTIONS.UP, DIRECTIONS.DOWN, DIRECTIONS.LEFT, DIRECTIONS.RIGHT];
 
 export const PLAYER_SPEED = 5; // tiles per second (converted to px per frame)
-export const ENEMY_SPEED = 3.8; // lowered base for early survivability
+export const ENEMY_SPEED = 3.2; // slower base speed
 export const FRIGHTENED_SPEED = 3.2;
 export const SPEED_INCREMENT = 0.3;
 
@@ -34,12 +34,10 @@ export const ENEMY_RESPAWN_TIME = 3000; // ms after being eaten
 export const ENEMY_RELEASE_INTERVAL = 3500; // ms between enemy releases at level 1
 export const ENEMY_RELEASE_DECREMENT = 250; // reduce interval per level (min clamp)
 
-// Harm activation mechanics
-// Enemies (virus/bacteria) are harmless until player reaches a score threshold. Once threshold reached,
-// each enemy becomes harmful only during a repeating window (default 5s harmful, then safe until next trigger if desired).
-// For now we implement a single 5s harmful activation that begins once threshold crossed; after that, standard frightened / eaten logic applies.
-export const HARM_SCORE_THRESHOLD = 300; // points after which enemies can start harming the player
-export const HARM_ACTIVE_DURATION = 5000; // ms window after threshold when enemies are harmful (outside frightened/eaten overrides)
+// Activation cycle: enemies always harmful, but periodically enter an "activated" heightened mode (faster, stronger visual pulse)
+export const ACTIVATION_CYCLE_DURATION = 14000; // total cycle length ms
+export const ACTIVATION_ACTIVE_DURATION = 5000; // ms at start of each cycle that enemies are in activated mode
+export const ACTIVATED_SPEED_MULTIPLIER = 1.35; // speed boost during activated mode
 
 export const SCORE_VALUES = {
   pathogen: 10,

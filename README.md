@@ -7,12 +7,12 @@ A lightweight browser game inspired by Pac-Man where you control a phagocyte con
 - Collect pathogens (small pellets) & antigen clusters (power pellets)
 - Enemies (viruses/bacteria) with chase / scatter / frightened / eaten states
 - Frightened chain bonus: each enemy eaten during one frightened period doubles value (200, 400, 800, 1600 ...)
-- Level progression modestly increases enemy speed & shortens release delays
+- Level progression modestly increases enemy speed
 - Lives system & Game Over screen (press `R` to restart)
 - Pause toggle with `P`
 - Local high score persistence via `localStorage`
 - Responsive mobile scaling with touch controls (D-pad + swipe)
-- Gradual enemy release timing for fairer early gameplay
+- Periodic enemy activation cycle with UI countdown bar (faster + stronger pulse during active phase)
 - Auto-filled pellet distribution (even spread) with animated pulse & glow
 - Distinct enemy visuals (spiky viruses vs capsule bacteria)
 - Animated phagocyte membrane (organic wavy perimeter + subtle nucleus shimmer)
@@ -100,14 +100,13 @@ Enemy Danger States:
 - Frightened: Tinted + slowed.
 - Frightened ending warning: Rapid alternating white flash during the final seconds (configurable via `FRIGHTENED_WARNING` constant) so you know when NOT to run directly into them anymore.
 
-### Score-Gated Harm Window
-Early gameplay easing: Enemies are initially non-lethal. They only become capable of harming the phagocyte after you reach a score of `HARM_SCORE_THRESHOLD` (default 300). Once crossed, a single harmful window of `HARM_ACTIVE_DURATION` (default 5 seconds) begins:
+### Activation Cycle
+Enemies now begin harmful immediately (outside spawn grace / frightened / eaten), but operate on a repeating activation cycle shown via the bar under the HUD:
 
-- During this 5s window: Normal enemies regain their subtle danger pulse and collisions (outside spawn grace & not frightened/eaten) will cost a life.
-- Before threshold or after the window elapses: Enemies appear dimmer and cannot harm you (still can be eaten if frightened).
-- Frightened / Eaten logic takes precedence over the harm window status.
-
-This mechanic gives players a safe ramp to learn movement before true threats activate.
+- Cycle length: configurable (default 14s) with an active phase (default 5s) at the start.
+- Active phase: enemies gain a speed boost & brighter/faster pulse.
+- Inactive phase: enemies revert to slower base speed and softer pulse but still lethal.
+- Picking up a power antigen still forces frightened state (overrides activation until it ends).
 
 Performance Considerations:
 - All animations are procedurally drawn (no images except optional reference SVG) keeping asset weight near-zero.

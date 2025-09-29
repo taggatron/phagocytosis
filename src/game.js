@@ -1,4 +1,4 @@
-import { TILE_SIZE, COLORS, SCORE_VALUES, START_LIVES, FRIGHTENED_DURATION, ENEMY_RESPAWN_TIME, SPEED_INCREMENT, ENEMY_RELEASE_INTERVAL, ENEMY_RELEASE_DECREMENT, HARM_SCORE_THRESHOLD, HARM_ACTIVE_DURATION } from './constants.js';
+import { TILE_SIZE, COLORS, SCORE_VALUES, START_LIVES, FRIGHTENED_DURATION, ENEMY_RESPAWN_TIME, SPEED_INCREMENT, ACTIVATION_CYCLE_DURATION, ACTIVATION_ACTIVE_DURATION, ACTIVATED_SPEED_MULTIPLIER } from './constants.js';
 import { getLevelLayout, isWallAt } from './level.js';
 import { Player, Enemy, EnemyState } from './entities.js';
 
@@ -28,8 +28,8 @@ export class Game {
   this.graceStart = performance.now();
   this.graceDuration = 2500; // ms of post-spawn invulnerability
 
-  // Harm activation: enemies harmless until score threshold reached; then 5s harmful window
-  this.harmActivatedAt = null; // timestamp when threshold first crossed
+    // Activation cycle timing
+    this.activationStart = performance.now(); // cycle anchor
 
     this.frightenedDuration = FRIGHTENED_DURATION;
     this.enemyRespawnTime = ENEMY_RESPAWN_TIME;
@@ -40,18 +40,18 @@ export class Game {
     const playerSpawn = findSpawns(this.layout, ['P'])[0] || { col: 14, row: 23 };
     this.player = new Player(playerSpawn.col, playerSpawn.row);
 
+    // Four enemies at corners (2 virus, 2 bacteria) scatter targets = their spawn corners
     this.enemies = [];
-    const enemySpawns = findSpawns(this.layout, ['V', 'B']);
-    // scatter corners
-    const corners = [ { col:1,row:1 }, { col:26,row:1 }, { col:1,row:29 }, { col:26,row:29 } ];
-    enemySpawns.forEach((s,i) => {
-      const kind = (s.ch === 'B') ? 'bacteria' : 'virus';
-      const e = new Enemy(s.col, s.row, corners[i % corners.length], kind);
-      e.released = (i === 0); // only first released
-      e.releaseTime = performance.now() + (i * ENEMY_RELEASE_INTERVAL);
+    const cornerDefs = [
+      { col:1, row:1, kind:'virus' },
+      { col:26, row:1, kind:'bacteria' },
+      { col:1, row:29, kind:'bacteria' },
+      { col:26, row:29, kind:'virus' }
+    ];
+    cornerDefs.forEach(def => {
+      const e = new Enemy(def.col, def.row, { col:def.col, row:def.row }, def.kind);
       this.enemies.push(e);
     });
-    this.baseReleaseInterval = ENEMY_RELEASE_INTERVAL;
 
     this.bindKeys();
   }
@@ -81,13 +81,7 @@ export class Game {
   update(dt) {
     if (this.gameOver || this.paused) return;
     this.player.update(dt, this.layout);
-    for (const enemy of this.enemies) {
-      if (!enemy.released) {
-        if (performance.now() >= enemy.releaseTime) enemy.released = true;
-        else continue; // skip update until released
-      }
-      enemy.update(dt, this);
-    }
+    for (const enemy of this.enemies) enemy.update(dt, this);
     this.handleCollisions();
     this.checkLevelComplete();
   }
@@ -109,11 +103,6 @@ export class Game {
     // enemies
     const now = performance.now();
     const inGrace = (now - this.graceStart) < this.graceDuration;
-    // Determine if harmful window is active
-    if (this.harmActivatedAt === null && this.score >= HARM_SCORE_THRESHOLD) {
-      this.harmActivatedAt = now; // start harmful window
-    }
-    const harmWindowActive = this.harmActivatedAt !== null && (now - this.harmActivatedAt) < HARM_ACTIVE_DURATION;
     for (const enemy of this.enemies) {
       const dx = enemy.x - this.player.x;
       const dy = enemy.y - this.player.y;
@@ -126,7 +115,7 @@ export class Game {
           this.score += enemy.pointsValue * (2 ** this.frightenedChain);
           this.frightenedChain++;
           this.player.triggerEngulf();
-        } else if (enemy.state !== EnemyState.EATEN && !inGrace && harmWindowActive) {
+        } else if (enemy.state !== EnemyState.EATEN && !inGrace) {
           this.killPlayer();
           break;
         }
@@ -164,19 +153,14 @@ export class Game {
     this.player.dir = { x: -1, y:0};
   this.graceStart = performance.now();
 
-    const enemySpawns = [];
-    this.layout.forEach((line,r)=>{[...line].forEach((c,col)=>{ if(c==='V'||c==='B') enemySpawns.push({col,row:r}); });});
-    this.enemies.forEach((e,i)=>{
-      const s = enemySpawns[i];
-      if (s) {
-        e.x = s.col * TILE_SIZE + TILE_SIZE/2;
-        e.y = s.row * TILE_SIZE + TILE_SIZE/2;
-        e.state = EnemyState.SCATTER;
-        e.pointsValue = SCORE_VALUES.enemyBase;
-        e.released = (i===0);
-        e.releaseTime = performance.now() + (i * Math.max(1200, this.baseReleaseInterval));
-      }
+    // Reset enemies to their corner scatter targets
+    this.enemies.forEach(e => {
+      e.x = e.scatterTarget.col * TILE_SIZE + TILE_SIZE/2;
+      e.y = e.scatterTarget.row * TILE_SIZE + TILE_SIZE/2;
+      e.state = EnemyState.SCATTER;
+      e.pointsValue = SCORE_VALUES.enemyBase;
     });
+    this.activationStart = performance.now();
   }
   checkLevelComplete() {
     if (this.collectibles.size === 0) {
@@ -185,8 +169,7 @@ export class Game {
       for (const e of this.enemies) {
         e.baseSpeed += SPEED_INCREMENT;
       }
-      // Faster releases next level
-      this.baseReleaseInterval = Math.max(1200, this.baseReleaseInterval - ENEMY_RELEASE_DECREMENT);
+      // Activation persists; no release schedule now
       this.populateCollectibles();
       this.resetPositions();
     }
@@ -218,10 +201,11 @@ export class Game {
     }
     if (this.gameOver) this.drawOverlay('GAME OVER - Press R');
     else if (this.paused) this.drawOverlay('PAUSED');
+    this.updateActivationBar();
   }
-  isHarmWindowActive() {
-    if (this.harmActivatedAt === null) return false;
-    return (performance.now() - this.harmActivatedAt) < HARM_ACTIVE_DURATION;
+  isActivatedMode() {
+    const cycleElapsed = (performance.now() - this.activationStart) % ACTIVATION_CYCLE_DURATION;
+    return cycleElapsed < ACTIVATION_ACTIVE_DURATION;
   }
   drawOverlay(text) {
     const ctx = this.ctx;
@@ -270,6 +254,24 @@ export class Game {
         ctx.beginPath();
         ctx.arc(x,y,glow,0,Math.PI*2); ctx.fill();
       }
+    }
+  }
+  updateActivationBar() {
+    const wrapper = document.getElementById('activationBarWrapper');
+    const bar = document.getElementById('activationBar');
+    const marker = document.getElementById('activationMarker');
+    if (!wrapper || !bar) return;
+    const now = performance.now();
+    const cycleElapsed = (now - this.activationStart) % ACTIVATION_CYCLE_DURATION;
+    const activated = cycleElapsed < ACTIVATION_ACTIVE_DURATION;
+    const pct = (cycleElapsed / ACTIVATION_CYCLE_DURATION) * 100;
+    bar.style.width = pct + '%';
+    if (activated) {
+      wrapper.classList.add('activation-active');
+      if (marker) marker.style.opacity = '1';
+    } else {
+      wrapper.classList.remove('activation-active');
+      if (marker) marker.style.opacity = '0';
     }
   }
   restart() {
