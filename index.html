@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Phagocytosis Arcade</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="ui">
+    <h1>Phagocytosis Arcade</h1>
+    <div class="hud">
+      <span id="score">Score: 0</span>
+      <span id="lives">Lives: 3</span>
+      <span id="level">Level: 1</span>
+      <span id="highScore">High: 0</span>
+    </div>
+    <canvas id="game" width="672" height="744" aria-label="Game canvas" role="img"></canvas>
+    <div class="controls-info">
+      <p>Controls: Arrow Keys / WASD to move. P to pause. R to restart after game over.</p>
+    </div>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

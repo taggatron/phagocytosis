@@ -1,0 +1,7 @@
+body { font-family: system-ui, Arial, sans-serif; background:#0f1a23; color:#e4f6ff; display:flex; justify-content:center; }
+#ui { max-width:760px; text-align:center; }
+canvas { background:#000; display:block; margin:0 auto; image-rendering:pixelated; border:2px solid #1f4459; }
+.hud { display:flex; gap:1.25rem; justify-content:center; font-weight:600; margin-bottom:.5rem; }
+.controls-info { font-size:.85rem; opacity:.75; }
+.game-over { font-size:2.5rem; color:#ff4d4d; text-shadow:0 0 8px #ff4d4d; }
+.paused { font-size:2rem; color:#ffda5c; }

@@ -1,0 +1,40 @@
+export const TILE_SIZE = 24; // px
+export const COLS = 28; // standard pac-like width
+export const ROWS = 31; // standard pac-like height
+export const CANVAS_WIDTH = COLS * TILE_SIZE;
+export const CANVAS_HEIGHT = ROWS * TILE_SIZE;
+
+export const COLORS = {
+  wall: '#1f3b52',
+  wallAccent: '#2e5e7a',
+  background: '#000000',
+  pathogen: '#86d1ff',
+  power: '#ffda5c',
+  player: '#6bff9c',
+  frightened: '#4d6bff',
+  eaten: '#ffffff'
+};
+
+export const DIRECTIONS = {
+  UP: { x: 0, y: -1, name: 'UP' },
+  DOWN: { x: 0, y: 1, name: 'DOWN' },
+  LEFT: { x: -1, y: 0, name: 'LEFT' },
+  RIGHT: { x: 1, y: 0, name: 'RIGHT' }
+};
+export const DIR_LIST = [DIRECTIONS.UP, DIRECTIONS.DOWN, DIRECTIONS.LEFT, DIRECTIONS.RIGHT];
+
+export const PLAYER_SPEED = 5; // tiles per second (converted to px per frame)
+export const ENEMY_SPEED = 4.5; // base
+export const FRIGHTENED_SPEED = 3.2;
+export const SPEED_INCREMENT = 0.3;
+
+export const FRIGHTENED_DURATION = 6000; // ms
+export const ENEMY_RESPAWN_TIME = 3000; // ms after being eaten
+
+export const SCORE_VALUES = {
+  pathogen: 10,
+  power: 50,
+  enemyBase: 200 // doubles per chain
+};
+
+export const START_LIVES = 3;
