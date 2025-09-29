@@ -29,24 +29,29 @@ export class Player extends Entity {
     this.speed = PLAYER_SPEED * (TILE_SIZE / 60); // px per frame at ~60fps
     this.alive = true;
     this.mouthAngle = 0; // simple animation variable optional later
+    this.moving = false; // only move when direction actively pressed/dragged
   }
   setDirection(dir) { this.pendingDir = dir; }
   update(dt, level) {
     if (!this.alive) return;
+    if (!this.moving) return; // halt if not actively commanded
     this.tryTurn(level);
     this.move(level);
   }
   tryTurn(level) {
     if (!this.pendingDir) return;
+    // Allow instant reversal
+    if (this.pendingDir.x === -this.dir.x && this.pendingDir.y === -this.dir.y) {
+      this.dir = this.pendingDir;
+      this.pendingDir = null;
+      return;
+    }
     const { col, row } = this.gridPos();
-    const withinCenter = Math.abs(this.x - (col * TILE_SIZE + TILE_SIZE / 2)) < 2 && Math.abs(this.y - (row * TILE_SIZE + TILE_SIZE / 2)) < 2;
+    const withinCenter = Math.abs(this.x - (col * TILE_SIZE + TILE_SIZE / 2)) < 3 && Math.abs(this.y - (row * TILE_SIZE + TILE_SIZE / 2)) < 3;
     if (!withinCenter) return;
     const nextC = col + this.pendingDir.x;
     const nextR = row + this.pendingDir.y;
-    if (!isWallAt(nextC, nextR)) {
-      this.dir = this.pendingDir;
-      this.pendingDir = null;
-    }
+    if (!isWallAt(nextC, nextR)) { this.dir = this.pendingDir; this.pendingDir = null; }
   }
   move(level) {
     const nextX = this.x + this.dir.x * this.speed;
@@ -65,13 +70,14 @@ export class Player extends Entity {
   draw(ctx, frightenedChain) {
     // Simple circle; could add wedge animation
     this.drawCircle(ctx, COLORS.player);
+    // Grace halo handled externally if needed
   }
 }
 
 export const EnemyState = Object.freeze({ CHASE: 'CHASE', SCATTER: 'SCATTER', FRIGHTENED: 'FRIGHTENED', EATEN: 'EATEN' });
 
 export class Enemy extends Entity {
-  constructor(col, row, scatterTarget) {
+  constructor(col, row, scatterTarget, kind='virus') {
     super(col, row);
     this.homeCol = col; this.homeRow = row;
     this.scatterTarget = scatterTarget; // {col,row}
@@ -82,6 +88,7 @@ export class Enemy extends Entity {
     this.respawnTimer = 0;
     this.visible = true;
     this.pointsValue = SCORE_VALUES.enemyBase;
+    this.kind = kind; // 'virus' | 'bacteria'
   }
   setState(state, now) {
     if (state === EnemyState.FRIGHTENED) {
@@ -142,9 +149,36 @@ export class Enemy extends Entity {
     return isWallAt(col, row);
   }
   draw(ctx) {
-    let color = '#ff5c5c';
-    if (this.state === EnemyState.FRIGHTENED) color = COLORS.frightened;
-    else if (this.state === EnemyState.EATEN) color = COLORS.eaten;
-    this.drawCircle(ctx, color);
+    let baseColor = '#ff5c5c';
+    if (this.kind === 'bacteria') baseColor = '#ff8a3d';
+    if (this.state === EnemyState.FRIGHTENED) baseColor = COLORS.frightened;
+    else if (this.state === EnemyState.EATEN) baseColor = COLORS.eaten;
+    const { x, y } = this; const r = this.radius;
+    if (this.kind === 'virus') {
+      // Spiky: draw polygon spikes
+      const spikes = 8;
+      ctx.beginPath();
+      for (let i=0;i<spikes;i++) {
+        const ang = (i/spikes)*Math.PI*2;
+        const rad = r * ( (i%2===0)?1:0.6 );
+        const sx = x + Math.cos(ang)*rad;
+        const sy = y + Math.sin(ang)*rad;
+        if (i===0) ctx.moveTo(sx,sy); else ctx.lineTo(sx,sy);
+      }
+      ctx.closePath();
+      ctx.fillStyle = baseColor;
+      ctx.fill();
+      // nucleus
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.beginPath(); ctx.arc(x,y,r*0.4,0,Math.PI*2); ctx.fill();
+    } else if (this.kind === 'bacteria') {
+      // Capsule shape
+      ctx.fillStyle = baseColor;
+      ctx.beginPath();
+      ctx.ellipse(x,y,r*1.1,r*0.7,0,0,Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.beginPath(); ctx.ellipse(x+r*0.2,y-r*0.1,r*0.3,r*0.18,0,0,Math.PI*2); ctx.fill();
+    }
   }
 }

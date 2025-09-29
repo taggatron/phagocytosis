@@ -1,5 +1,6 @@
 import { Game } from './game.js';
 import { setupInput } from './input.js';
+import { setupTouch } from './touch.js';
 
 const canvas = document.getElementById('game');
 const scoreEl = document.getElementById('score');
@@ -9,6 +10,7 @@ const highScoreEl = document.getElementById('highScore');
 
 const game = new Game(canvas);
 setupInput(game.player);
+setupTouch(game.player);
 
 function loop() {
   const now = performance.now();

@@ -24,12 +24,14 @@ export const DIRECTIONS = {
 export const DIR_LIST = [DIRECTIONS.UP, DIRECTIONS.DOWN, DIRECTIONS.LEFT, DIRECTIONS.RIGHT];
 
 export const PLAYER_SPEED = 5; // tiles per second (converted to px per frame)
-export const ENEMY_SPEED = 4.5; // base
+export const ENEMY_SPEED = 3.8; // lowered base for early survivability
 export const FRIGHTENED_SPEED = 3.2;
 export const SPEED_INCREMENT = 0.3;
 
 export const FRIGHTENED_DURATION = 6000; // ms
 export const ENEMY_RESPAWN_TIME = 3000; // ms after being eaten
+export const ENEMY_RELEASE_INTERVAL = 3500; // ms between enemy releases at level 1
+export const ENEMY_RELEASE_DECREMENT = 250; // reduce interval per level (min clamp)
 
 export const SCORE_VALUES = {
   pathogen: 10,

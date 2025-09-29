@@ -1,7 +1,21 @@
-body { font-family: system-ui, Arial, sans-serif; background:#0f1a23; color:#e4f6ff; display:flex; justify-content:center; }
-#ui { max-width:760px; text-align:center; }
-canvas { background:#000; display:block; margin:0 auto; image-rendering:pixelated; border:2px solid #1f4459; }
-.hud { display:flex; gap:1.25rem; justify-content:center; font-weight:600; margin-bottom:.5rem; }
-.controls-info { font-size:.85rem; opacity:.75; }
-.game-over { font-size:2.5rem; color:#ff4d4d; text-shadow:0 0 8px #ff4d4d; }
-.paused { font-size:2rem; color:#ffda5c; }
+body { font-family: system-ui, Arial, sans-serif; background:#0f1a23; color:#e4f6ff; display:flex; justify-content:center; margin:0; padding:0 0 2rem; }
+#ui { width:100%; max-width:760px; text-align:center; padding:0 1rem; }
+canvas { background:#000; display:block; margin:0 auto; image-rendering:pixelated; border:2px solid #1f4459; width:100%; height:auto; aspect-ratio: 28 / 31; max-width:672px; }
+.hud { display:flex; flex-wrap:wrap; gap:.75rem 1.25rem; justify-content:center; font-weight:600; margin-bottom:.5rem; font-size:clamp(.75rem,2.4vw,.95rem); }
+.controls-info { font-size:clamp(.65rem,2vw,.85rem); opacity:.75; }
+.game-over { font-size:2.2rem; color:#ff4d4d; text-shadow:0 0 8px #ff4d4d; }
+.paused { font-size:1.8rem; color:#ffda5c; }
+
+/* Touch Controls */
+.touch-controls { display:none; position:fixed; bottom:1.1rem; left:50%; transform:translateX(-50%); width:220px; height:180px; pointer-events:none; }
+.touch-controls button { pointer-events:auto; position:absolute; width:64px; height:64px; background:rgba(35,65,85,0.55); border:2px solid #2e5e7a; border-radius:12px; color:#e4f6ff; font-size:1rem; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+.touch-controls button:active { background:rgba(72,132,164,0.75); }
+.btn-up { top:0; left:50%; transform:translate(-50%,0); }
+.btn-down { bottom:0; left:50%; transform:translate(-50%,0); }
+.btn-left { top:50%; left:0; transform:translate(0,-50%); }
+.btn-right { top:50%; right:0; transform:translate(0,-50%); }
+
+@media (max-width: 820px) {
+	.touch-controls { display:block; }
+	body { padding-bottom:220px; }
+}
