@@ -14,7 +14,7 @@ export const COLORS = {
   frightened: '#4d6bff',
   eaten: '#ffffff',
   skinRow: '#ffccd9', // light pink (skin)
-  bloodRow: '#ffb3b3' // light red (blood)
+  bloodRow: '#f53b3bff' // light red (blood)
 };
 
 export const DIRECTIONS = {
