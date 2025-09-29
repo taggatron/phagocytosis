@@ -47,25 +47,70 @@ export class Player extends Entity {
       return;
     }
     const { col, row } = this.gridPos();
-    const withinCenter = Math.abs(this.x - (col * TILE_SIZE + TILE_SIZE / 2)) < 3 && Math.abs(this.y - (row * TILE_SIZE + TILE_SIZE / 2)) < 3;
-    if (!withinCenter) return;
+    const centerX = col * TILE_SIZE + TILE_SIZE / 2;
+    const centerY = row * TILE_SIZE + TILE_SIZE / 2;
+    const offCenterX = Math.abs(this.x - centerX);
+    const offCenterY = Math.abs(this.y - centerY);
+    const perpendicular = (this.pendingDir.x !== 0 && this.dir.y !== 0) || (this.pendingDir.y !== 0 && this.dir.x !== 0);
+    const looseThreshold = 6; // permit slight drift
+    if (!perpendicular) {
+      if (offCenterX > 3 || offCenterY > 3) return; // need closer center for non-perpendicular
+    } else {
+      // If turning perpendicular, gently snap axis not used by new direction
+      if (this.pendingDir.x !== 0) {
+        if (offCenterY < looseThreshold) this.y = centerY; else return;
+      } else if (this.pendingDir.y !== 0) {
+        if (offCenterX < looseThreshold) this.x = centerX; else return;
+      }
+    }
     const nextC = col + this.pendingDir.x;
     const nextR = row + this.pendingDir.y;
     if (!isWallAt(nextC, nextR)) { this.dir = this.pendingDir; this.pendingDir = null; }
   }
   move(level) {
-    const nextX = this.x + this.dir.x * this.speed;
-    const nextY = this.y + this.dir.y * this.speed;
-    if (!this.collidesWithWall(nextX, nextY)) {
-      this.x = nextX; this.y = nextY;
-    } else {
-      // stop at tile center
+    // Axis-separated movement to reduce corner sticking
+    const stepX = this.dir.x * this.speed;
+    const stepY = this.dir.y * this.speed;
+    if (stepX !== 0) {
+      const nx = this.x + stepX;
+      if (!this.collidesExpanded(nx, this.y)) this.x = nx; else this.snapAxis('x');
     }
+    if (stepY !== 0) {
+      const ny = this.y + stepY;
+      if (!this.collidesExpanded(this.x, ny)) this.y = ny; else this.snapAxis('y');
+    }
+    // Attempt gentle snap toward center of current tile to keep alignment
+    const { col, row } = this.gridPos();
+    const centerX = col * TILE_SIZE + TILE_SIZE / 2;
+    const centerY = row * TILE_SIZE + TILE_SIZE / 2;
+    const snapThreshold = 1.1; // px
+    if (Math.abs(this.x - centerX) < snapThreshold) this.x = centerX;
+    if (Math.abs(this.y - centerY) < snapThreshold) this.y = centerY;
   }
   collidesWithWall(nx, ny) {
     const col = Math.floor(nx / TILE_SIZE);
     const row = Math.floor(ny / TILE_SIZE);
     return isWallAt(col, row);
+  }
+  collidesExpanded(nx, ny) {
+    // Sample four corners of the circle's bounding box
+    const r = this.radius * 0.85;
+    const points = [
+      { x: nx - r, y: ny - r },
+      { x: nx + r, y: ny - r },
+      { x: nx - r, y: ny + r },
+      { x: nx + r, y: ny + r }
+    ];
+    return points.some(p => {
+      const c = Math.floor(p.x / TILE_SIZE);
+      const rRow = Math.floor(p.y / TILE_SIZE);
+      return isWallAt(c, rRow);
+    });
+  }
+  snapAxis(axis) {
+    const { col, row } = this.gridPos();
+    if (axis === 'x') this.x = col * TILE_SIZE + TILE_SIZE / 2;
+    if (axis === 'y') this.y = row * TILE_SIZE + TILE_SIZE / 2;
   }
   draw(ctx, frightenedChain) {
     // Simple circle; could add wedge animation

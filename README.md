@@ -82,6 +82,7 @@ Considerations:
 ## Control & Safety Improvements
 - Instant reversal: you can flip direction (180°) immediately even if not centered in a tile.
 - Spawn grace: ~2.5s invulnerability (halo + flicker) after a life loss or level start so enemies cannot instantly collide.
+- Movement smoothing & anti-sticking: axis-separated movement, expanded collision sampling, and relaxed perpendicular turn window to prevent getting caught on walls.
 
 ## License
 MIT
