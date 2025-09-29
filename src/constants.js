@@ -34,6 +34,13 @@ export const ENEMY_RESPAWN_TIME = 3000; // ms after being eaten
 export const ENEMY_RELEASE_INTERVAL = 3500; // ms between enemy releases at level 1
 export const ENEMY_RELEASE_DECREMENT = 250; // reduce interval per level (min clamp)
 
+// Harm activation mechanics
+// Enemies (virus/bacteria) are harmless until player reaches a score threshold. Once threshold reached,
+// each enemy becomes harmful only during a repeating window (default 5s harmful, then safe until next trigger if desired).
+// For now we implement a single 5s harmful activation that begins once threshold crossed; after that, standard frightened / eaten logic applies.
+export const HARM_SCORE_THRESHOLD = 300; // points after which enemies can start harming the player
+export const HARM_ACTIVE_DURATION = 5000; // ms window after threshold when enemies are harmful (outside frightened/eaten overrides)
+
 export const SCORE_VALUES = {
   pathogen: 10,
   power: 50,

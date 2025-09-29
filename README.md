@@ -100,6 +100,15 @@ Enemy Danger States:
 - Frightened: Tinted + slowed.
 - Frightened ending warning: Rapid alternating white flash during the final seconds (configurable via `FRIGHTENED_WARNING` constant) so you know when NOT to run directly into them anymore.
 
+### Score-Gated Harm Window
+Early gameplay easing: Enemies are initially non-lethal. They only become capable of harming the phagocyte after you reach a score of `HARM_SCORE_THRESHOLD` (default 300). Once crossed, a single harmful window of `HARM_ACTIVE_DURATION` (default 5 seconds) begins:
+
+- During this 5s window: Normal enemies regain their subtle danger pulse and collisions (outside spawn grace & not frightened/eaten) will cost a life.
+- Before threshold or after the window elapses: Enemies appear dimmer and cannot harm you (still can be eaten if frightened).
+- Frightened / Eaten logic takes precedence over the harm window status.
+
+This mechanic gives players a safe ramp to learn movement before true threats activate.
+
 Performance Considerations:
 - All animations are procedurally drawn (no images except optional reference SVG) keeping asset weight near-zero.
 - Effects scale gracefully on mobile; can be toggled or simplified in a future settings panel if needed.

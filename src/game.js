@@ -1,4 +1,4 @@
-import { TILE_SIZE, COLORS, SCORE_VALUES, START_LIVES, FRIGHTENED_DURATION, ENEMY_RESPAWN_TIME, SPEED_INCREMENT, ENEMY_RELEASE_INTERVAL, ENEMY_RELEASE_DECREMENT } from './constants.js';
+import { TILE_SIZE, COLORS, SCORE_VALUES, START_LIVES, FRIGHTENED_DURATION, ENEMY_RESPAWN_TIME, SPEED_INCREMENT, ENEMY_RELEASE_INTERVAL, ENEMY_RELEASE_DECREMENT, HARM_SCORE_THRESHOLD, HARM_ACTIVE_DURATION } from './constants.js';
 import { getLevelLayout, isWallAt } from './level.js';
 import { Player, Enemy, EnemyState } from './entities.js';
 
@@ -27,6 +27,9 @@ export class Game {
     this.frightenedChain = 0;
   this.graceStart = performance.now();
   this.graceDuration = 2500; // ms of post-spawn invulnerability
+
+  // Harm activation: enemies harmless until score threshold reached; then 5s harmful window
+  this.harmActivatedAt = null; // timestamp when threshold first crossed
 
     this.frightenedDuration = FRIGHTENED_DURATION;
     this.enemyRespawnTime = ENEMY_RESPAWN_TIME;
@@ -104,7 +107,13 @@ export class Game {
     }
 
     // enemies
-    const inGrace = (performance.now() - this.graceStart) < this.graceDuration;
+    const now = performance.now();
+    const inGrace = (now - this.graceStart) < this.graceDuration;
+    // Determine if harmful window is active
+    if (this.harmActivatedAt === null && this.score >= HARM_SCORE_THRESHOLD) {
+      this.harmActivatedAt = now; // start harmful window
+    }
+    const harmWindowActive = this.harmActivatedAt !== null && (now - this.harmActivatedAt) < HARM_ACTIVE_DURATION;
     for (const enemy of this.enemies) {
       const dx = enemy.x - this.player.x;
       const dy = enemy.y - this.player.y;
@@ -117,7 +126,7 @@ export class Game {
           this.score += enemy.pointsValue * (2 ** this.frightenedChain);
           this.frightenedChain++;
           this.player.triggerEngulf();
-        } else if (enemy.state !== EnemyState.EATEN && !inGrace) {
+        } else if (enemy.state !== EnemyState.EATEN && !inGrace && harmWindowActive) {
           this.killPlayer();
           break;
         }
@@ -187,7 +196,7 @@ export class Game {
     ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
     this.drawWalls();
     this.drawCollectibles();
-    for (const enemy of this.enemies) enemy.draw(ctx);
+    for (const enemy of this.enemies) enemy.draw(ctx, this);
     const inGrace = (performance.now() - this.graceStart) < this.graceDuration;
     if (inGrace) {
       const t = performance.now();
@@ -209,6 +218,10 @@ export class Game {
     }
     if (this.gameOver) this.drawOverlay('GAME OVER - Press R');
     else if (this.paused) this.drawOverlay('PAUSED');
+  }
+  isHarmWindowActive() {
+    if (this.harmActivatedAt === null) return false;
+    return (performance.now() - this.harmActivatedAt) < HARM_ACTIVE_DURATION;
   }
   drawOverlay(text) {
     const ctx = this.ctx;

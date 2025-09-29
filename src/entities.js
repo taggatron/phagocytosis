@@ -244,7 +244,7 @@ export class Enemy extends Entity {
     const row = Math.floor(ny / TILE_SIZE);
     return isWallAt(col, row);
   }
-  draw(ctx) {
+  draw(ctx, gameContext) {
     let baseColor = '#ff5c5c';
     if (this.kind === 'bacteria') baseColor = '#ff8a3d';
     if (this.state === EnemyState.FRIGHTENED) {
@@ -258,9 +258,16 @@ export class Enemy extends Entity {
       }
     } else if (this.state === EnemyState.EATEN) baseColor = COLORS.eaten;
     else {
-      // harmful state flashing subtle to indicate danger
-      const phase = Math.floor(performance.now()/260)%2;
-      if (phase===0) baseColor = baseColor; else baseColor = baseColor + 'cc';
+      // Determine harm window active from game context
+      const harmActive = gameContext && gameContext.isHarmWindowActive && gameContext.isHarmWindowActive();
+      if (harmActive) {
+        // harmful state flashing subtle to indicate danger
+        const phase = Math.floor(performance.now()/260)%2;
+        if (phase===0) baseColor = baseColor; else baseColor = baseColor + 'cc';
+      } else {
+        // harmless appearance slightly desaturated / dim
+        baseColor += '55';
+      }
     }
     const { x, y } = this; const r = this.radius;
     if (this.kind === 'virus') {
