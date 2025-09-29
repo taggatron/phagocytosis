@@ -1,4 +1,4 @@
-import { TILE_SIZE, COLORS, SCORE_VALUES, START_LIVES, FRIGHTENED_DURATION, ENEMY_RESPAWN_TIME, SPEED_INCREMENT, ACTIVATION_CYCLE_DURATION, ACTIVATION_ACTIVE_DURATION, ACTIVATED_SPEED_MULTIPLIER, ROWS, COLS, SCATTER_DURATION, CHASE_DURATION } from './constants.js';
+import { TILE_SIZE, COLORS, SCORE_VALUES, START_LIVES, FRIGHTENED_DURATION, ENEMY_RESPAWN_TIME, SPEED_INCREMENT, ACTIVATION_CYCLE_DURATION, ACTIVATION_ACTIVE_DURATION, ACTIVATED_SPEED_MULTIPLIER, ROWS, COLS, CHASE_DURATION } from './constants.js';
 import { getLevelLayout, isWallAt } from './level.js';
 import { Player, Enemy, EnemyState } from './entities.js';
 
@@ -33,9 +33,9 @@ export class Game {
   this.activationFrozenElapsed = 0; // stored elapsed when frozen
   this.activationFrozen = false; // whether activation progress is paused
 
-  // Scatter/Chase cycle timing
-  this.modeCycleStart = performance.now();
-  this.currentMode = 'SCATTER'; // 'SCATTER' | 'CHASE'
+  // Chase cycle timing (scatter = waiting for activation cycle end)
+  this.currentMode = 'SCATTER';
+  this.chaseStart = null;
   this.enemiesPaused = false; // pause movement after chase completes
 
     this.frightenedDuration = FRIGHTENED_DURATION;
@@ -103,29 +103,31 @@ export class Game {
   }
   updateModeCycle() {
     const now = performance.now();
-    const elapsed = now - this.modeCycleStart;
-    if (this.currentMode === 'SCATTER' && elapsed > SCATTER_DURATION) {
-      this.currentMode = 'CHASE';
-      this.modeCycleStart = now;
-      this.enemies.forEach(e => { if (e.state === EnemyState.SCATTER) e.setState(EnemyState.CHASE, now); });
-      // Freeze activation progress while in chase
-      const cycleElapsed = (now - this.activationStart) % ACTIVATION_CYCLE_DURATION;
-      this.activationFrozenElapsed = cycleElapsed;
-      this.activationFrozen = true;
-    } else if (this.currentMode === 'CHASE' && elapsed > CHASE_DURATION) {
-      this.currentMode = 'SCATTER';
-      this.modeCycleStart = now;
-      this.enemies.forEach(e => { if (e.state === EnemyState.CHASE) e.setState(EnemyState.SCATTER, now); });
-      // Unfreeze activation progress
-      if (this.activationFrozen) {
-        // Adjust activationStart so frozen elapsed is preserved
-        const realNow = performance.now();
-        this.activationStart = realNow - this.activationFrozenElapsed;
-        this.activationFrozen = false;
+    if (this.currentMode === 'SCATTER') {
+      const actElapsed = this.activationFrozen
+        ? this.activationFrozenElapsed
+        : (now - this.activationStart) % ACTIVATION_CYCLE_DURATION;
+      const activationDone = actElapsed >= (ACTIVATION_CYCLE_DURATION - 16);
+      if (activationDone) {
+        this.currentMode = 'CHASE';
+        this.chaseStart = now;
+        this.enemies.forEach(e => { if (e.state === EnemyState.SCATTER) e.setState(EnemyState.CHASE, now); });
+        // Freeze activation at full bar
+        this.activationFrozenElapsed = ACTIVATION_CYCLE_DURATION;
+        this.activationFrozen = true;
       }
-      // Pause enemies briefly after chase completes
-      this.enemiesPaused = true;
-      setTimeout(()=>{ this.enemiesPaused = false; }, 1500);
+    } else if (this.currentMode === 'CHASE') {
+      if (now - this.chaseStart > CHASE_DURATION) {
+        this.currentMode = 'SCATTER';
+        this.enemies.forEach(e => { if (e.state === EnemyState.CHASE) e.setState(EnemyState.SCATTER, now); });
+        // Restart activation cycle
+        this.activationStart = performance.now();
+        this.activationFrozen = false;
+        this.activationFrozenElapsed = 0;
+        // Pause enemies briefly after chase
+        this.enemiesPaused = true;
+        setTimeout(()=>{ this.enemiesPaused = false; }, 1500);
+      }
     }
   }
   handleCollisions() {
@@ -203,10 +205,10 @@ export class Game {
       e.state = EnemyState.SCATTER;
       e.pointsValue = SCORE_VALUES.enemyBase;
     });
-    this.activationStart = performance.now();
-    this.activationFrozen = false; this.activationFrozenElapsed = 0;
-    this.modeCycleStart = performance.now();
-    this.currentMode = 'SCATTER';
+  this.activationStart = performance.now();
+  this.activationFrozen = false; this.activationFrozenElapsed = 0;
+  this.currentMode = 'SCATTER';
+  this.chaseStart = null;
     this.enemiesPaused = false;
   }
   checkLevelComplete() {
@@ -360,11 +362,15 @@ export class Game {
       return;
     }
     wrap.style.display = 'block';
-    const now = performance.now();
-    const elapsed = now - this.modeCycleStart;
-    let duration = this.currentMode === 'SCATTER' ? SCATTER_DURATION : CHASE_DURATION;
-    const pct = Math.min(100, (elapsed / duration) * 100);
-    bar.style.width = pct + '%';
-    wrap.className = this.currentMode === 'CHASE' ? 'chase-active' : 'scatter-active';
+    if (this.currentMode === 'CHASE' && this.chaseStart) {
+      const now = performance.now();
+      const elapsed = now - this.chaseStart;
+      const pct = Math.min(100, (elapsed / CHASE_DURATION) * 100);
+      bar.style.width = pct + '%';
+      wrap.className = 'chase-active';
+    } else {
+      bar.style.width = '0%';
+      wrap.className = 'scatter-active';
+    }
   }
 }
