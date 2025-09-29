@@ -29,6 +29,7 @@ export const FRIGHTENED_SPEED = 3.2;
 export const SPEED_INCREMENT = 0.3;
 
 export const FRIGHTENED_DURATION = 6000; // ms
+export const FRIGHTENED_WARNING = 1200; // last ms of frightened where enemies flash
 export const ENEMY_RESPAWN_TIME = 3000; // ms after being eaten
 export const ENEMY_RELEASE_INTERVAL = 3500; // ms between enemy releases at level 1
 export const ENEMY_RELEASE_DECREMENT = 250; // reduce interval per level (min clamp)

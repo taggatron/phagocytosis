@@ -5,16 +5,20 @@ A lightweight browser game inspired by Pac-Man where you control a phagocyte con
 ## Features
 - Grid-based maze rendered with HTML5 Canvas (no build tools, pure ES modules)
 - Collect pathogens (small pellets) & antigen clusters (power pellets)
-- Enemies (viruses/bacteria) with simple chase / scatter / frightened behaviors
+- Enemies (viruses/bacteria) with chase / scatter / frightened / eaten states
 - Frightened chain bonus: each enemy eaten during one frightened period doubles value (200, 400, 800, 1600 ...)
-- Level progression increases enemy speed slightly
+- Level progression modestly increases enemy speed & shortens release delays
 - Lives system & Game Over screen (press `R` to restart)
 - Pause toggle with `P`
 - Local high score persistence via `localStorage`
- - Responsive mobile scaling with touch controls (D-pad + swipe)
- - Gradual enemy release timing for fairer early gameplay
- - Auto-filled pellet distribution (even spread) with animated pulse & glow
- - Distinct enemy visuals (spiky viruses vs capsule bacteria)
+- Responsive mobile scaling with touch controls (D-pad + swipe)
+- Gradual enemy release timing for fairer early gameplay
+- Auto-filled pellet distribution (even spread) with animated pulse & glow
+- Distinct enemy visuals (spiky viruses vs capsule bacteria)
+- Animated phagocyte membrane (organic wavy perimeter + subtle nucleus shimmer)
+- Engulf / digest / expel animation sequence when consuming pellets or frightened enemies
+- Enemy harm clarity: dangerous enemies softly pulse; frightened state ends with white flashing warning window
+- Spawn / life-loss grace halo with temporary invulnerability
 
 ## Controls
 - Move: Hold Arrow keys or WASD (movement stops when released)
@@ -54,12 +58,12 @@ src/
 ```
 
 ## Future Enhancements Ideas
-- Distinct visual sprites or animated shapes
-- More sophisticated enemy AI timing (scatter/chase cycles)
+- Sprite sheet / richer multi-part animation system (organelles, ripple layers)
+- More sophisticated enemy AI timing (longer structured scatter/chase cycles)
 - Multiple level layouts / procedural variation
-- Sound effects
-- Touch / mobile controls
-- Accessibility adjustments & colorblind-friendly palette choices
+- Sound effects (engulf, frightened warning chime, life loss)
+- Accessibility & colorblind-friendly palette options / high contrast mode
+- Settings panel (toggle animations, flashing reduction, difficulty tuning)
 
 ## Mobile Support
 The canvas scales responsively to fit smaller screens while keeping the grid aspect ratio. On devices below ~820px width a translucent directional pad appears. You can also swipe on the playfield to move:
@@ -83,6 +87,22 @@ Considerations:
 - Instant reversal: you can flip direction (180°) immediately even if not centered in a tile.
 - Spawn grace: ~2.5s invulnerability (halo + flicker) after a life loss or level start so enemies cannot instantly collide.
 - Movement smoothing & anti-sticking: axis-separated movement, expanded collision sampling, and relaxed perpendicular turn window to prevent getting caught on walls.
+
+## Engulf & Visual Feedback
+When the phagocyte consumes a pathogen or power antigen cluster, an engulfment sequence plays:
+
+1. Grab: A semi-transparent pseudopod ring expands briefly around the cell edge.
+2. Digest: An inner glow pulse travels toward the center (metabolic digestion).
+3. Expel: A faint outward particle / ring shrinks & fades (optional visual; currently subtle flash) indicating processing complete.
+
+Enemy Danger States:
+- Normal (dangerous): Subtle rhythmic brightness pulse so it's clear they can still harm you.
+- Frightened: Tinted + slowed.
+- Frightened ending warning: Rapid alternating white flash during the final seconds (configurable via `FRIGHTENED_WARNING` constant) so you know when NOT to run directly into them anymore.
+
+Performance Considerations:
+- All animations are procedurally drawn (no images except optional reference SVG) keeping asset weight near-zero.
+- Effects scale gracefully on mobile; can be toggled or simplified in a future settings panel if needed.
 
 ## License
 MIT

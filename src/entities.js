@@ -1,4 +1,4 @@
-import { TILE_SIZE, DIRECTIONS, PLAYER_SPEED, ENEMY_SPEED, FRIGHTENED_SPEED, COLORS, SCORE_VALUES } from './constants.js';
+import { TILE_SIZE, DIRECTIONS, PLAYER_SPEED, ENEMY_SPEED, FRIGHTENED_SPEED, COLORS, SCORE_VALUES, FRIGHTENED_DURATION, FRIGHTENED_WARNING } from './constants.js';
 import { chooseNextDirection } from './pathfinding.js';
 import { isWallAt } from './level.js';
 
@@ -30,6 +30,9 @@ export class Player extends Entity {
     this.alive = true;
     this.mouthAngle = 0; // simple animation variable optional later
     this.moving = false; // only move when direction actively pressed/dragged
+    this.membranePhase = 0;
+    this.engulfTimer = 0; // ms timestamp when engulf started
+    this.engulfStage = null; // 'grab' | 'digest' | 'expel'
   }
   setDirection(dir) { this.pendingDir = dir; }
   update(dt, level) {
@@ -37,6 +40,18 @@ export class Player extends Entity {
     if (!this.moving) return; // halt if not actively commanded
     this.tryTurn(level);
     this.move(level);
+    this.membranePhase += dt * 0.004; // slow wave
+    if (this.engulfStage) this.updateEngulf();
+  }
+  triggerEngulf() {
+    this.engulfTimer = performance.now();
+    this.engulfStage = 'grab';
+  }
+  updateEngulf() {
+    const elapsed = performance.now() - this.engulfTimer;
+    if (this.engulfStage === 'grab' && elapsed > 250) this.engulfStage = 'digest';
+    else if (this.engulfStage === 'digest' && elapsed > 900) this.engulfStage = 'expel';
+    else if (this.engulfStage === 'expel' && elapsed > 1200) this.engulfStage = null;
   }
   tryTurn(level) {
     if (!this.pendingDir) return;
@@ -113,9 +128,45 @@ export class Player extends Entity {
     if (axis === 'y') this.y = row * TILE_SIZE + TILE_SIZE / 2;
   }
   draw(ctx, frightenedChain) {
-    // Simple circle; could add wedge animation
-    this.drawCircle(ctx, COLORS.player);
-    // Grace halo handled externally if needed
+    // Animated wavy membrane approximation using radial perturbation
+    const segments = 24;
+    const baseR = this.radius;
+    ctx.beginPath();
+    for (let i=0;i<=segments;i++) {
+      const t = i/segments * Math.PI*2;
+      const wave = Math.sin(t*3 + this.membranePhase*2)*1.8 + Math.sin(t*5 + this.membranePhase)*1.2;
+      const r = baseR + wave;
+      const px = this.x + Math.cos(t)*r;
+      const py = this.y + Math.sin(t)*r;
+      if (i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    const grad = ctx.createRadialGradient(this.x,this.y,baseR*0.2,this.x,this.y,baseR+4);
+    grad.addColorStop(0,'#c9ffe4');
+    grad.addColorStop(0.5,'#6bff9c');
+    grad.addColorStop(1,'#3fbf66');
+    ctx.fillStyle = grad;
+    ctx.fill();
+    // nucleus
+    ctx.beginPath();
+    ctx.arc(this.x + Math.sin(this.membranePhase*1.5)*2, this.y + Math.cos(this.membranePhase*1.2)*2, baseR*0.45, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fill();
+    // Engulf animation overlay
+    if (this.engulfStage) {
+      const elapsed = performance.now() - this.engulfTimer;
+      if (this.engulfStage === 'grab') {
+        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(this.x,this.y,baseR + 6 - elapsed*0.02,0,Math.PI*2); ctx.stroke();
+      } else if (this.engulfStage === 'digest') {
+        ctx.fillStyle = 'rgba(255,255,255,0.08)';
+        ctx.beginPath(); ctx.arc(this.x,this.y,baseR*0.9 + Math.sin(elapsed*0.01)*2,0,Math.PI*2); ctx.fill();
+      } else if (this.engulfStage === 'expel') {
+        ctx.strokeStyle = 'rgba(200,255,200,' + (1 - (elapsed-900)/300) + ')';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(this.x,this.y,baseR + (elapsed-900)*0.05,0,Math.PI*2); ctx.stroke();
+      }
+    }
   }
 }
 
@@ -196,8 +247,21 @@ export class Enemy extends Entity {
   draw(ctx) {
     let baseColor = '#ff5c5c';
     if (this.kind === 'bacteria') baseColor = '#ff8a3d';
-    if (this.state === EnemyState.FRIGHTENED) baseColor = COLORS.frightened;
-    else if (this.state === EnemyState.EATEN) baseColor = COLORS.eaten;
+    if (this.state === EnemyState.FRIGHTENED) {
+      const timeLeft = FRIGHTENED_DURATION - (performance.now() - this.frightenedTimer);
+      if (timeLeft < FRIGHTENED_WARNING) {
+        // Flash between frightened and warning color
+        const phase = Math.floor(performance.now()/120)%2;
+        baseColor = phase === 0 ? COLORS.frightened : '#ffffff';
+      } else {
+        baseColor = COLORS.frightened;
+      }
+    } else if (this.state === EnemyState.EATEN) baseColor = COLORS.eaten;
+    else {
+      // harmful state flashing subtle to indicate danger
+      const phase = Math.floor(performance.now()/260)%2;
+      if (phase===0) baseColor = baseColor; else baseColor = baseColor + 'cc';
+    }
     const { x, y } = this; const r = this.radius;
     if (this.kind === 'virus') {
       // Spiky: draw polygon spikes

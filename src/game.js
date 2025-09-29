@@ -100,6 +100,7 @@ export class Game {
         this.triggerFrightened();
       }
       this.collectibles.delete(key);
+      this.player.triggerEngulf();
     }
 
     // enemies
@@ -115,6 +116,7 @@ export class Game {
           enemy.respawnTimer = performance.now();
           this.score += enemy.pointsValue * (2 ** this.frightenedChain);
           this.frightenedChain++;
+          this.player.triggerEngulf();
         } else if (enemy.state !== EnemyState.EATEN && !inGrace) {
           this.killPlayer();
           break;
