@@ -42,11 +42,17 @@ export class Game {
 
     // Four enemies at corners (2 virus, 2 bacteria) scatter targets = their spawn corners
     this.enemies = [];
+    // Determine first and last passable (non-all-wall) rows for corner spawns
+    const passableRows = this.layout
+      .map((line, idx) => ({ line, idx }))
+      .filter(obj => /[ .oPVB]/.test(obj.line.replace(/#/g,''))); // row contains at least one non-wall
+    const firstPassable = passableRows.length ? passableRows[0].idx : 1;
+    const lastPassable = passableRows.length ? passableRows[passableRows.length - 1].idx : ROWS - 2;
     const cornerDefs = [
-      { col:1, row:1, kind:'virus' },
-      { col:26, row:1, kind:'bacteria' },
-      { col:1, row:26, kind:'bacteria' },
-      { col:26, row:26, kind:'virus' }
+      { col:1, row:firstPassable, kind:'virus' },
+      { col:COLS-2, row:firstPassable, kind:'bacteria' },
+      { col:1, row:lastPassable, kind:'bacteria' },
+      { col:COLS-2, row:lastPassable, kind:'virus' }
     ];
     cornerDefs.forEach(def => {
       const e = new Enemy(def.col, def.row, { col:def.col, row:def.row }, def.kind);
@@ -228,9 +234,13 @@ export class Game {
     ctx.fillStyle = COLORS.bloodRow;
     ctx.fillRect(0, bottomY, COLS * TILE_SIZE, TILE_SIZE);
     this.layout.forEach((line,r)=>{
+      const lastRow = ROWS - 1;
       [...line].forEach((c,col)=>{
         if (c === '#') {
-          ctx.fillStyle = COLORS.wall;
+          // Top row walls = skin, bottom row walls = blood
+            if (r === 0) ctx.fillStyle = COLORS.skinRow;
+            else if (r === lastRow) ctx.fillStyle = COLORS.bloodRow;
+            else ctx.fillStyle = COLORS.wall;
           ctx.fillRect(col*TILE_SIZE, r*TILE_SIZE, TILE_SIZE, TILE_SIZE);
         }
       });

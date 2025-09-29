@@ -1,6 +1,6 @@
 export const TILE_SIZE = 24; // px
 export const COLS = 28; // standard pac-like width
-export const ROWS = 31; // trimmed height to remove empty bottom space
+export const ROWS = 34; // added top skin and bottom blood wall rows
 export const CANVAS_WIDTH = COLS * TILE_SIZE;
 export const CANVAS_HEIGHT = ROWS * TILE_SIZE;
 
