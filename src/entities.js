@@ -209,7 +209,8 @@ export class Enemy extends Entity {
     if (this.state === EnemyState.FRIGHTENED) {
       const elapsed = performance.now() - this.frightenedTimer;
       if (elapsed > context.frightenedDuration) {
-        this.state = EnemyState.CHASE; // revert
+        // Return to whichever global mode is active
+        this.state = (context.currentMode === 'SCATTER') ? EnemyState.SCATTER : EnemyState.CHASE;
       }
     }
     this.chooseDir(context);

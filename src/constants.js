@@ -41,6 +41,10 @@ export const ACTIVATION_CYCLE_DURATION = 14000; // total cycle length ms
 export const ACTIVATION_ACTIVE_DURATION = 3000; // ms at start of each cycle that enemies are in activated mode
 export const ACTIVATED_SPEED_MULTIPLIER = 1.35; // speed boost during activated mode
 
+// Simple global scatter/chase cycle (classic arcade style)
+export const SCATTER_DURATION = 6000; // ms enemies retreat to corners
+export const CHASE_DURATION = 20000; // ms enemies aggressively pursue player
+
 export const SCORE_VALUES = {
   pathogen: 10,
   power: 50,

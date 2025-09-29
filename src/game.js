@@ -1,4 +1,4 @@
-import { TILE_SIZE, COLORS, SCORE_VALUES, START_LIVES, FRIGHTENED_DURATION, ENEMY_RESPAWN_TIME, SPEED_INCREMENT, ACTIVATION_CYCLE_DURATION, ACTIVATION_ACTIVE_DURATION, ACTIVATED_SPEED_MULTIPLIER, ROWS, COLS } from './constants.js';
+import { TILE_SIZE, COLORS, SCORE_VALUES, START_LIVES, FRIGHTENED_DURATION, ENEMY_RESPAWN_TIME, SPEED_INCREMENT, ACTIVATION_CYCLE_DURATION, ACTIVATION_ACTIVE_DURATION, ACTIVATED_SPEED_MULTIPLIER, ROWS, COLS, SCATTER_DURATION, CHASE_DURATION } from './constants.js';
 import { getLevelLayout, isWallAt } from './level.js';
 import { Player, Enemy, EnemyState } from './entities.js';
 
@@ -30,6 +30,10 @@ export class Game {
 
     // Activation cycle timing
     this.activationStart = performance.now(); // cycle anchor
+
+  // Scatter/Chase cycle timing
+  this.modeCycleStart = performance.now();
+  this.currentMode = 'SCATTER'; // 'SCATTER' | 'CHASE'
 
     this.frightenedDuration = FRIGHTENED_DURATION;
     this.enemyRespawnTime = ENEMY_RESPAWN_TIME;
@@ -86,10 +90,24 @@ export class Game {
   }
   update(dt) {
     if (this.gameOver || this.paused) return;
+    this.updateModeCycle();
     this.player.update(dt, this.layout);
     for (const enemy of this.enemies) enemy.update(dt, this);
     this.handleCollisions();
     this.checkLevelComplete();
+  }
+  updateModeCycle() {
+    const now = performance.now();
+    const elapsed = now - this.modeCycleStart;
+    if (this.currentMode === 'SCATTER' && elapsed > SCATTER_DURATION) {
+      this.currentMode = 'CHASE';
+      this.modeCycleStart = now;
+      this.enemies.forEach(e => { if (e.state === EnemyState.SCATTER) e.setState(EnemyState.CHASE, now); });
+    } else if (this.currentMode === 'CHASE' && elapsed > CHASE_DURATION) {
+      this.currentMode = 'SCATTER';
+      this.modeCycleStart = now;
+      this.enemies.forEach(e => { if (e.state === EnemyState.CHASE) e.setState(EnemyState.SCATTER, now); });
+    }
   }
   handleCollisions() {
     // player with collectibles
@@ -167,6 +185,8 @@ export class Game {
       e.pointsValue = SCORE_VALUES.enemyBase;
     });
     this.activationStart = performance.now();
+    this.modeCycleStart = performance.now();
+    this.currentMode = 'SCATTER';
   }
   checkLevelComplete() {
     if (this.collectibles.size === 0) {
@@ -208,6 +228,7 @@ export class Game {
     if (this.gameOver) this.drawOverlay('GAME OVER - Press R');
     else if (this.paused) this.drawOverlay('PAUSED');
     this.updateActivationBar();
+    this.updateChaseBar();
   }
   isActivatedMode() {
     const cycleElapsed = (performance.now() - this.activationStart) % ACTIVATION_CYCLE_DURATION;
@@ -299,5 +320,17 @@ export class Game {
     this.baseReleaseInterval = ENEMY_RELEASE_INTERVAL;
     for (const e of this.enemies) { e.baseSpeed = 3.8; e.state = EnemyState.SCATTER; }
     this.graceStart = performance.now();
+  }
+
+  updateChaseBar() {
+    const wrap = document.getElementById('chaseBarWrapper');
+    const bar = document.getElementById('chaseBar');
+    if (!wrap || !bar) return;
+    const now = performance.now();
+    const elapsed = now - this.modeCycleStart;
+    let duration = this.currentMode === 'SCATTER' ? SCATTER_DURATION : CHASE_DURATION;
+    const pct = Math.min(100, (elapsed / duration) * 100);
+    bar.style.width = pct + '%';
+    wrap.className = this.currentMode === 'CHASE' ? 'chase-active' : 'scatter-active';
   }
 }
