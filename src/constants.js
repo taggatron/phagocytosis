@@ -12,7 +12,9 @@ export const COLORS = {
   power: '#ffda5c',
   player: '#6bff9c',
   frightened: '#4d6bff',
-  eaten: '#ffffff'
+  eaten: '#ffffff',
+  skinRow: '#ffccd9', // light pink (skin)
+  bloodRow: '#ffb3b3' // light red (blood)
 };
 
 export const DIRECTIONS = {
@@ -36,7 +38,7 @@ export const ENEMY_RELEASE_DECREMENT = 250; // reduce interval per level (min cl
 
 // Activation cycle: enemies always harmful, but periodically enter an "activated" heightened mode (faster, stronger visual pulse)
 export const ACTIVATION_CYCLE_DURATION = 14000; // total cycle length ms
-export const ACTIVATION_ACTIVE_DURATION = 5000; // ms at start of each cycle that enemies are in activated mode
+export const ACTIVATION_ACTIVE_DURATION = 3000; // ms at start of each cycle that enemies are in activated mode
 export const ACTIVATED_SPEED_MULTIPLIER = 1.35; // speed boost during activated mode
 
 export const SCORE_VALUES = {

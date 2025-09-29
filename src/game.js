@@ -1,4 +1,4 @@
-import { TILE_SIZE, COLORS, SCORE_VALUES, START_LIVES, FRIGHTENED_DURATION, ENEMY_RESPAWN_TIME, SPEED_INCREMENT, ACTIVATION_CYCLE_DURATION, ACTIVATION_ACTIVE_DURATION, ACTIVATED_SPEED_MULTIPLIER } from './constants.js';
+import { TILE_SIZE, COLORS, SCORE_VALUES, START_LIVES, FRIGHTENED_DURATION, ENEMY_RESPAWN_TIME, SPEED_INCREMENT, ACTIVATION_CYCLE_DURATION, ACTIVATION_ACTIVE_DURATION, ACTIVATED_SPEED_MULTIPLIER, ROWS, COLS } from './constants.js';
 import { getLevelLayout, isWallAt } from './level.js';
 import { Player, Enemy, EnemyState } from './entities.js';
 
@@ -220,6 +220,13 @@ export class Game {
     const ctx = this.ctx;
     ctx.strokeStyle = COLORS.wallAccent;
     ctx.lineWidth = 2;
+    // Skin (top row) background
+    ctx.fillStyle = COLORS.skinRow;
+    ctx.fillRect(0,0, COLS * TILE_SIZE, TILE_SIZE);
+    // Blood (bottom row) background
+    const bottomY = (ROWS-1) * TILE_SIZE;
+    ctx.fillStyle = COLORS.bloodRow;
+    ctx.fillRect(0, bottomY, COLS * TILE_SIZE, TILE_SIZE);
     this.layout.forEach((line,r)=>{
       [...line].forEach((c,col)=>{
         if (c === '#') {
