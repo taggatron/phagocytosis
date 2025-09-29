@@ -37,11 +37,12 @@ export class Player extends Entity {
   setDirection(dir) { this.pendingDir = dir; }
   update(dt, level) {
     if (!this.alive) return;
-    if (!this.moving) return; // halt if not actively commanded
-    this.tryTurn(level);
-    this.move(level);
+    // Always advance engulf animation & membrane phase even if stationary
     this.membranePhase += dt * 0.004; // slow wave
     if (this.engulfStage) this.updateEngulf();
+    if (!this.moving) return; // movement logic halted if no active input
+    this.tryTurn(level);
+    this.move(level);
   }
   triggerEngulf() {
     this.engulfTimer = performance.now();
@@ -157,7 +158,9 @@ export class Player extends Entity {
       if (this.engulfStage === 'grab') {
         ctx.strokeStyle = 'rgba(255,255,255,0.6)';
         ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.arc(this.x,this.y,baseR + 6 - elapsed*0.02,0,Math.PI*2); ctx.stroke();
+        // Compute shrinking ring radius; clamp to a small positive value to avoid negative radius errors.
+        const ringR = Math.max(2, baseR + 6 - elapsed * 0.02);
+        ctx.beginPath(); ctx.arc(this.x,this.y, ringR,0,Math.PI*2); ctx.stroke();
       } else if (this.engulfStage === 'digest') {
         ctx.fillStyle = 'rgba(255,255,255,0.08)';
         ctx.beginPath(); ctx.arc(this.x,this.y,baseR*0.9 + Math.sin(elapsed*0.01)*2,0,Math.PI*2); ctx.fill();
