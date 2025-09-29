@@ -1,6 +1,6 @@
 export const TILE_SIZE = 24; // px
 export const COLS = 28; // standard pac-like width
-export const ROWS = 31; // standard pac-like height
+export const ROWS = 31; // trimmed height to remove empty bottom space
 export const CANVAS_WIDTH = COLS * TILE_SIZE;
 export const CANVAS_HEIGHT = ROWS * TILE_SIZE;
 

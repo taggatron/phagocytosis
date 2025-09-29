@@ -45,8 +45,8 @@ export class Game {
     const cornerDefs = [
       { col:1, row:1, kind:'virus' },
       { col:26, row:1, kind:'bacteria' },
-      { col:1, row:29, kind:'bacteria' },
-      { col:26, row:29, kind:'virus' }
+      { col:1, row:26, kind:'bacteria' },
+      { col:26, row:26, kind:'virus' }
     ];
     cornerDefs.forEach(def => {
       const e = new Enemy(def.col, def.row, { col:def.col, row:def.row }, def.kind);
