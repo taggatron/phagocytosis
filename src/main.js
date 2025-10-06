@@ -12,6 +12,19 @@ const game = new Game(canvas);
 setupInput(game.player);
 setupTouch(game.player);
 
+// Mobile restart button
+const btnRestart = document.getElementById('btnRestartMobile');
+if (btnRestart) {
+  btnRestart.addEventListener('click', () => {
+    game.restart();
+    // HUD will be updated on next frame; optionally force immediate update
+    scoreEl.textContent = 'Score: ' + game.score;
+    livesEl.textContent = 'Lives: ' + game.lives;
+    levelEl.textContent = 'Level: ' + game.level;
+    highScoreEl.textContent = 'High: ' + game.highScore;
+  });
+}
+
 function loop() {
   const now = performance.now();
   const dt = now - (game.lastTime || now);

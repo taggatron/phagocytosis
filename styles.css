@@ -19,6 +19,7 @@ canvas { background:#000; display:block; margin:0 auto; image-rendering:pixelate
 .touch-controls { display:none; position:fixed; bottom:1.1rem; left:50%; transform:translateX(-50%); width:220px; height:180px; pointer-events:none; }
 .touch-controls button { pointer-events:auto; position:absolute; width:64px; height:64px; background:rgba(35,65,85,0.55); border:2px solid #2e5e7a; border-radius:12px; color:#e4f6ff; font-size:1rem; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
 .touch-controls button:active { background:rgba(72,132,164,0.75); }
+.btn-restart { top:-72px; left:50%; transform:translate(-50%,0); width:58px; height:58px; border-radius:50%; font-weight:700; font-size:1.1rem; background:linear-gradient(180deg,rgba(255,218,92,0.9),rgba(255,179,71,0.9)); color:#10202a; border-color:#2e5e7a; box-shadow:0 6px 14px rgba(0,0,0,0.35); }
 .btn-up { top:0; left:50%; transform:translate(-50%,0); }
 .btn-down { bottom:0; left:50%; transform:translate(-50%,0); }
 .btn-left { top:50%; left:0; transform:translate(0,-50%); }
